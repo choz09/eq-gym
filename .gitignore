@@ -1,0 +1,12 @@
+# 公開するファイルだけを管理する(それ以外は、制作途中のものなので公開しない)
+*
+!.gitignore
+!.nojekyll
+!index.html
+!engine.js
+!manifest.webmanifest
+!icons/
+icons/*
+!icons/apple-touch-icon-v3.png
+!icons/icon-192-v3.png
+!icons/icon-512-v3.png

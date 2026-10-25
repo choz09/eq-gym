@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#010102">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@1,900&display=swap">
+<title>Equity Gym</title>
+<meta name="description" content="ハンド対レンジのエクイティを予想して、誤差を採点するポーカーのトレーニングツール。レンジを自由に選んで計算もできます。">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192-v3.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon-v3.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EQ Gym">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#010102; --surface:#0f1011; --surface2:#18191a; --line:#23252a; --text:#e9eef2; --dim:#a3adbb; --faint:#4b5565;
+  --accent:#c6f432; --accent-ink:#141b02; --btn:#c6f432; --btn-ink:#141b02;
+  --sel:#e9eef2; --sel-ink:#0b0c0e;
+  --g-s:#4aa3ff; --g-a:#9ccbff; --g-b:#f2cf3c; --g-c:#ff9a3d; --g-d:#a64dd6;
+  --win:#4aa3ff; --tie:#d9d9df; --lose:#ff9a3d;
+  --suit-s:#dfe1e8; --suit-h:#ff6b6b; --suit-d:#6ea8ff; --suit-c:#5fe08a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;-webkit-text-size-adjust:100%}
+body{min-height:100vh;padding-bottom:env(safe-area-inset-bottom,0px)}
+main{max-width:480px;margin:0 auto;padding:12px max(16px,env(safe-area-inset-left,0px)) 24px max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-size:18px;margin:4px 0 14px;font-weight:700;letter-spacing:.02em}
+h2{font-size:14px;margin:24px 0 12px;color:var(--dim);font-weight:600}
+button{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:max(10px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.top-in{max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wm{font-family:"Archivo","Arial Black","Segoe UI Black",system-ui,sans-serif;font-weight:900;font-style:italic;font-size:28px;line-height:1;letter-spacing:.01em;text-transform:uppercase;white-space:nowrap}
+.wm b{color:var(--accent);font-weight:900}
+.tabs{display:flex;background:var(--surface2);border-radius:10px;padding:3px;gap:2px}
+.tabs button{border:0;background:none;padding:10px 20px;min-height:40px;border-radius:8px;font-size:14px;color:var(--dim);font-weight:700}
+.tabs button.on{background:var(--sel);color:var(--sel-ink)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.row{display:flex;align-items:center;gap:8px}
+.between{justify-content:space-between}
+.wrap{flex-wrap:wrap}
+.dim{color:var(--dim)}
+.small{font-size:13px}
+.chip{border:0;background:var(--surface2);color:var(--dim);padding:10px 14px;min-height:40px;border-radius:999px;font-size:13px}
+.chip.on{background:transparent;color:var(--sel);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--sel)}
+.btn{border:0;background:var(--btn);color:var(--btn-ink);font-weight:700;font-size:16px;padding:14px 16px;border-radius:8px;width:100%}
+.btn.ghost{background:var(--surface2);color:var(--text);font-weight:600}
+.btn.sm{width:auto;font-size:13px;padding:10px 14px;min-height:40px;border-radius:6px}
+.btn:disabled{opacity:.45}
+/* カード */
+.pc{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:54px;height:76px;border-radius:9px;background:#2a2c33;font-weight:700;line-height:1}
+.pc b{font-size:28px}.pc i{font-style:normal;font-size:22px;margin-top:3px}
+.pc.sm{width:40px;height:56px;border-radius:7px}.pc.sm b{font-size:21px}.pc.sm i{font-size:16px}
+.s0{color:var(--suit-s)}.s1{color:var(--suit-h)}.s2{color:var(--suit-d)}.s3{color:var(--suit-c)}
+.slot{display:inline-flex;align-items:center;justify-content:center;width:54px;height:76px;border-radius:9px;border:1.5px dashed var(--faint);background:none;color:var(--faint);font-size:24px}
+.slot.sm{width:40px;height:56px;font-size:18px}
+.cards{display:flex;gap:6px}
+/* 13x13 */
+.grid{display:grid;grid-template-columns:repeat(13,1fr);gap:1px;touch-action:none;user-select:none;-webkit-user-select:none}
+.grid.ro{touch-action:auto}
+.gwrap{display:grid;grid-template-columns:16px 1fr;gap:1px}
+.ghead{display:grid;gap:1px}
+.ghead.gtop{grid-template-columns:repeat(13,1fr)}
+.ghead.gleft{grid-template-rows:repeat(13,1fr)}
+.gh{border:0;background:none;color:var(--dim);font-size:11px;font-weight:700;padding:0;min-height:18px}
+.gh:active{color:var(--sel)}
+.loupe{position:fixed;z-index:30;pointer-events:none;transform:translate(-50%,-100%);background:var(--sel);color:var(--sel-ink);border-radius:10px;padding:8px 14px;font-weight:800;font-size:20px;box-shadow:0 4px 18px rgba(0,0,0,.6);white-space:nowrap}
+.loupe small{font-size:12px;font-weight:700;margin-right:6px;opacity:.7}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:#7a8595;font-size:9.5px;font-weight:600;border-radius:2px;overflow:hidden}
+.cell.on{background:var(--sel);color:var(--sel-ink)}
+.cell.hm{font-size:10.5px;font-weight:800}
+.cell.out{background:transparent;box-shadow:inset 0 0 0 1px var(--line);color:#4a5058}
+.cell.out.pair{box-shadow:inset 0 0 0 1px #3a3f48}
+.legend2{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:8px}
+.legend2+.bar{height:8px;border-radius:4px;margin-top:4px}
+.cell.dead{opacity:.35}
+.cell.focus{outline:2px solid #fff;outline-offset:-2px}
+.legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);margin-top:8px}
+.legend .bar{flex:1;height:8px;border-radius:4px}
+/* 出題 */
+.guess{font-size:52px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:2px 0}
+.guess small{font-size:24px;color:var(--dim);margin-left:2px}
+input[type=range]{width:100%;height:36px;accent-color:var(--sel);margin:0}
+.step{flex:1;height:44px;border:0;border-radius:8px;background:var(--surface2);font-size:16px;font-weight:700}
+input[type=range]{-webkit-appearance:none;appearance:none;background:transparent;height:44px}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:4px;background:#2d3139}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;margin-top:-11px;border-radius:50%;background:var(--sel);border:0}
+input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:#2d3139}
+input[type=range]::-moz-range-thumb{width:30px;height:30px;border-radius:50%;background:var(--sel);border:0}
+.result-top{text-align:center;padding:6px 0 2px}
+.grade{display:inline-block;padding:5px 14px;border-radius:999px;font-weight:800;color:#0d0e10;font-size:15px}
+.big{font-size:44px;font-weight:800;font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px}
+.kv span:nth-child(odd){color:var(--dim)}
+.kv span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+.gbar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--surface2)}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dot{width:14px;height:14px;border-radius:50%}
+.gl{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:6px 14px;font-size:12px;margin-top:8px;color:var(--dim)}
+.gl i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+/* 電卓 */
+.seg{display:flex;background:var(--surface2);border-radius:10px;padding:3px}
+.seg button{flex:1;border:0;background:none;padding:10px 8px;min-height:40px;border-radius:6px;color:var(--dim);font-size:13px;font-weight:600}
+.seg button.on{background:var(--surface);color:var(--sel);box-shadow:inset 0 0 0 1.5px var(--sel)}
+input[type=text]{width:100%;background:var(--surface2);border:0;border-radius:10px;padding:11px 12px;color:var(--text);font:inherit;font-size:14px}
+.bar2{height:22px;border-radius:6px;overflow:hidden;display:flex;background:var(--surface2)}
+.bar2 div{height:100%}
+.err{color:var(--g-d);font-size:12px;margin-top:4px}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;z-index:10}
+.sheet>div{background:var(--surface);width:100%;max-width:480px;margin:0 auto;border-radius:18px 18px 0 0;padding:14px 12px calc(16px + env(safe-area-inset-bottom))}
+.pk{display:grid;grid-template-columns:repeat(13,1fr);gap:3px;margin-bottom:6px}
+.pk button{border:0;background:var(--surface2);border-radius:5px;padding:8px 0;font-size:14px;font-weight:700}
+.pk button:disabled{opacity:.18}
+.pk button.sel{outline:2px solid var(--sel)}
+.spin{color:var(--dim);text-align:center;padding:18px 0}
+.note{font-size:12px;color:var(--dim);line-height:1.6}
+a{color:var(--sel)}
+.arow{padding:8px 0}
+.arow.faint{opacity:.75}
+.abar{flex:1;height:10px;border-radius:5px;background:var(--surface2);overflow:hidden}
+.abar div{height:100%}
+.plot{position:relative;height:130px}
+.plot>i{position:absolute;left:0;right:0;border-top:1px dashed var(--faint);pointer-events:none}
+.plot>i em{position:absolute;right:0;top:-16px;font-style:normal;font-size:12px;color:var(--dim)}
+.bars{position:absolute;inset:0;display:flex;align-items:flex-end;gap:6px;padding-right:26px}
+.tcol{flex:1;max-width:44px;height:100%;display:flex;align-items:flex-end}
+.tbar{width:100%;border-radius:3px 3px 0 0}
+.xl{display:flex;gap:6px;padding-right:26px;margin-top:6px}
+.xl span{flex:1;max-width:44px;text-align:center;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.kpi{background:var(--surface2);border-radius:8px;padding:12px 16px}
+.kpi.main{background:var(--bg);border:1px solid var(--line)}
+.kl{font-size:12px;color:var(--dim)}
+.kbig{font-size:64px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+.big small{font-size:.5em;color:var(--dim);margin-left:2px;font-weight:700}
+.faintnote{color:#8a919c;margin-top:2px}
+#go{scroll-margin-top:84px}
+.foot{max-width:480px;margin:8px auto 32px;padding:0 max(16px,env(safe-area-inset-left,0px));font-size:12px;line-height:1.7;color:#8a919c}
+.kbig small,.kn small{font-size:.4em;color:var(--dim);margin-left:2px;font-weight:700}
+.kn{font-size:30px;font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.kpis3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.sess{display:block;width:100%;text-align:left;border:0;color:var(--text);font:inherit}
+.qrow{display:flex;align-items:center;gap:10px;padding:10px}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span>
+<nav class="tabs">
+  <button data-tab="quiz" class="on">出題</button>
+  <button data-tab="calc">計算</button>
+</nav></div></header>
+<main id="app"></main>
+<footer class="foot">プリフロップのエクイティはシミュレーションによる推定値です(誤差の目安を結果に表示)。記録・登録したレンジはこの端末内にのみ保存され、外部には送信されません。</footer>
+<div id="sheet"></div>
+
+<script src="engine.js"></script>
+<script>
+"use strict";
+const { CELLS, RL, cardId, cardStr, cellOfCombo, parseRange, rangeCombos, topPercent, countCombos, computeEquity } = EQ;
+
+// 強さ順(対ランダムのエクイティ順、2026-10-24にMCで算出)
+EQ.setRankOrder("AA KK QQ JJ TT 99 88 AKs 77 AQs AJs AKo ATs AQo AJo KQs 66 KJs A9s ATo A8s KTs KQo A7s A9o KJo QJs 55 A5s K9s A6s A8o KTo QTs A7o A4s K8s A3s QJo A5o K9o A6o K7s Q9s JTs A2s QTo K6s A4o 44 K8o Q8s A3o K5s J9s K7o Q9o JTo K4s A2o K6o Q7s K3s J8s T9s Q6s Q8o 33 K5o K2s J9o Q5s K4o T8s J7s Q7o Q4s K3o T9o J8o Q6o Q3s 98s K2o J6s T7s Q5o Q2s 22 T8o J5s J7o T6s Q4o 97s J4s Q3o 87s 98o J3s T7o J6o 96s Q2o T5s J2s J5o 86s T4s T6o 97o J4o 95s 76s T3s 87o J3o T2s 85s 96o T5o J2o 94s 75s T4o 86o 93s 65s 95o 84s T3o 76o 92s 74s 85o T2o 54s 64s 83s 94o 75o 82s 93o 73s 65o 53s 63s 84o 92o 43s 74o 72s 54o 64o 62s 52s 83o 82o 42s 73o 53o 63o 32s 43o 72o 62o 52o 42o 32o".split(" "));
+
+const $ = (s, el = document) => el.querySelector(s);
+const SUITCH = ["♠", "♥", "♦", "♣"];
+const cardHtml = (id, sm) => `<span class="pc ${sm ? "sm" : ""} s${id & 3}"><b>${EQ.RK[id >> 2]}</b><i>${SUITCH[id & 3]}</i></span>`;
+const QUICK = [["Axs すべて", "A2s+"], ["ポケット すべて", "22+"], ["Axo すべて", "A2o+"], ["BWs", "ATs+,KTs+,QTs+,JTs"]];
+const addRange = (sel, txt) => { const r = parseRange(txt).sel; r.forEach((v, i) => v && (sel[i] = 1)); };
+const comboLabel = (n) => `${n} / 1326 (${((n / 1326) * 100).toFixed(1)}%)`;
+const pct = (x, d = 1) => (x * 100).toFixed(d);
+const store = {
+  get(k, def) { try { const v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); } catch (e) { return def; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+
+// ---------- 採点 ----------
+const GRADES = [
+  { max: 1, key: "S", label: "ほぼ完璧", color: "var(--g-s)" },
+  { max: 2.5, key: "A", label: "かなり近い", color: "var(--g-a)" },
+  { max: 5, key: "B", label: "まずまず", color: "var(--g-b)" },
+  { max: 10, key: "C", label: "ずれている", color: "var(--g-c)" },
+  { max: 1000, key: "D", label: "大きくずれ", color: "var(--g-d)" }
+];
+const gradeOf = (err) => GRADES.find((g) => err <= g.max + 1e-9);
+
+// ---------- 出題用のレンジ ----------
+const TOP_LIST = [5, 8, 10, 12, 15, 20, 25, 30, 40, 50];
+// 登録済みレンジ。直近に選んだものが先頭
+function allPatterns() {
+  return S.patterns.map((c) => { const sel = new Uint8Array(169); c.idx.forEach((i) => (sel[i] = 1)); return { id: c.id, name: c.name, sel, custom: true, used: c.used || 0 }; }).sort((a, b) => b.used - a.used);
+}
+function touchPattern(id) {
+  const c = S.patterns.find((x) => x.id === id);
+  if (c) { c.used = Date.now(); savePatterns(); }
+}
+const enabledPatterns = () => allPatterns().filter((x) => !S.offPatterns.includes(x.id));
+function randomRange(kind) {
+  const pats = enabledPatterns();
+  const useTop = kind === "top" || !pats.length || (kind !== "shape" && Math.random() < 0.55);
+  if (useTop) {
+    const p = TOP_LIST[(Math.random() * TOP_LIST.length) | 0];
+    return { label: `上位${p}%`, sel: topPercent(p), note: "強さ順(対ランダム)で上位" + p + "%" };
+  }
+  const pt = pats[(Math.random() * pats.length) | 0];
+  return { label: pt.name, sel: pt.sel, note: "" };
+}
+
+// ---------- 状態 ----------
+const S = {
+  tab: "quiz",
+  settings: Object.assign({ street: "pre", kind: "mix", hero: "all" }, store.get("eqt_settings", {})),
+  sessions: store.get("eqt_sessions", []), cur: null, qview: "home", detailId: null, delSess: null,
+  patterns: store.get("eqt_patterns", []), offPatterns: store.get("eqt_off", []), editor: null, delId: null,
+  q: null, phase: "ask", guess: 50, res: null,
+  calc: {
+    A: { mode: "hand", cards: [null, null], sel: new Uint8Array(169), text: "", pats: [] },
+    B: { mode: "range", cards: [null, null], sel: new Uint8Array(169), text: "", pats: [] },
+    board: [null, null, null, null, null], out: null, busy: false, focus: null, err: { A: "", B: "" }
+  }
+};
+
+// ---------- 共通UI ----------
+function gridHtml(sel, opts = {}) {
+  // opts: ro, heat(Float64Array|null, セルごとのeq or NaN), dead(Uint8Array of cell), focus
+  let h = `<div class="grid ${opts.ro ? "ro" : ""}" ${opts.id ? `id="${opts.id}"` : ""}>`;
+  for (let i = 0; i < 169; i++) {
+    const on = sel[i];
+    let style = "", cls = "cell", txt = CELLS[i].label;
+    if (opts.heat) {
+      const v = opts.heat[i];
+      if (on && !Number.isNaN(v)) { cls += " hm"; style = heatStyle(v); txt = Math.round(v * 100); }
+      else cls += " out";
+      if (CELLS[i].kind === "p") cls += " pair";
+    } else if (on) cls += " on";
+    if (opts.focus === i) cls += " focus";
+    h += `<div class="${cls}" data-i="${i}" ${style ? `style="${style}"` : ""}>${txt}</div>`;
+  }
+  h += "</div>";
+  if (!opts.head) return h;
+  const hd = (kind) => RL.split("").map((ch, i) => `<button class="gh" data-h${kind}="${opts.head}:${i}">${ch}</button>`).join("");
+  return `<div class="gwrap"><span></span><div class="ghead gtop">${hd("c")}</div><div class="ghead gleft">${hd("r")}</div>${h}</div>`;
+}
+// 見出しタップ: 行X = XX と、そのXより弱い相手とのスーテッド / 列X = XX と、同じオフスーツ(Xより強いランクは含めない)
+function toggleHeader(sel, kind, i) {
+  const idx = [];
+  for (let j = i; j < 13; j++) idx.push(kind === "r" ? i * 13 + j : j * 13 + i);
+  const all = idx.every((x) => sel[x]);
+  idx.forEach((x) => (sel[x] = all ? 0 : 1));
+}
+const HEAT_STOPS = [[0, "#ff9a3d"], [0.25, "#ff9a3d"], [0.35, "#b0763f"], [0.5, "#5b6470"], [0.65, "#4f87b8"], [0.75, "#4aa3ff"], [1, "#4aa3ff"]];
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function heatRgb(v) {
+  const st = HEAT_STOPS;
+  v = Math.max(0, Math.min(1, v));
+  for (let i = 1; i < st.length; i++) {
+    if (v <= st[i][0]) {
+      const f = (v - st[i - 1][0]) / (st[i][0] - st[i - 1][0] || 1), a = hexRgb(st[i - 1][1]), b = hexRgb(st[i][1]);
+      return a.map((x, k) => Math.round(x + (b[k] - x) * f));
+    }
+  }
+  return hexRgb(st[st.length - 1][1]);
+}
+function heatStyle(v) { // 背景色と、読みやすい文字色
+  const [r, g, b] = heatRgb(v);
+  const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  const cw = 1.05 / (L + 0.05), cb = (L + 0.05) / 0.0505; // 白文字 / ほぼ黒文字のコントラスト比
+  return `background:rgb(${r},${g},${b});color:${cw >= cb ? "#fff" : "#010102"}`;
+}
+function heatFromBuckets(V, res) { // 相手コンボごとのeq → セルごとの平均(勝ち/引き分け/コンボ数つき)
+  const { bEq, bWin, bTie } = res;
+  const sum = new Float64Array(169), w = new Float64Array(169), t = new Float64Array(169), n = new Float64Array(169);
+  V.forEach((c, i) => { if (Number.isNaN(bEq[i])) return; const ci = cellOfCombo(c[0], c[1]); sum[ci] += bEq[i]; w[ci] += bWin[i]; t[ci] += bTie[i]; n[ci]++; });
+  const eq = Float64Array.from(sum, (x, i) => (n[i] ? x / n[i] : NaN));
+  eq.win = Float64Array.from(w, (x, i) => (n[i] ? x / n[i] : NaN));
+  eq.tie = Float64Array.from(t, (x, i) => (n[i] ? x / n[i] : NaN));
+  eq.cnt = n;
+  return eq;
+}
+function legendHtml() {
+  const st = HEAT_STOPS;
+  const grad = st.map(([p, c]) => `${c} ${p * 100}%`).join(",");
+  return `<div class="legend2"><span>不利 0%</span><span>五分 50%</span><span>有利 100%</span></div><div class="bar" style="background:linear-gradient(90deg,${grad})"></div>`;
+}
+const CELL_HINT = "セルをタップで詳細(勝ち/引き分け/負け・コンボ数)";
+function cellDetail(heat, i) {
+  const n = heat.cnt[i];
+  return `${CELLS[i].label}: エクイティ ${(heat[i] * 100).toFixed(1)}%(勝ち ${(heat.win[i] * 100).toFixed(1)} / 引き分け ${(heat.tie[i] * 100).toFixed(1)} / 負け ${((1 - heat.win[i] - heat.tie[i]) * 100).toFixed(1)})・${n}コンボ`;
+}
+
+function attachGridPaint(el, sel, onChange) {
+  let paint = null, last = null;
+  const cellAt = (x, y) => { const e = document.elementFromPoint(x, y); return e && e.dataset && e.dataset.i != null && el.contains(e) ? +e.dataset.i : null; };
+  const loupe = (x, y, i) => {
+    let lp = $("#loupe");
+    if (i == null) { if (lp) lp.remove(); return; }
+    if (!lp) { lp = document.createElement("div"); lp.id = "loupe"; lp.className = "loupe"; document.body.appendChild(lp); }
+    lp.innerHTML = `<small>${paint ? "追加" : "解除"}</small>${CELLS[i].label}`;
+    lp.style.left = Math.max(60, Math.min(window.innerWidth - 60, x)) + "px";
+    lp.style.top = Math.max(60, y - 44) + "px";
+  };
+  const focus = (i) => {
+    if (last != null && el.children[last]) el.children[last].classList.remove("focus");
+    last = i;
+    if (i != null) el.children[i].classList.add("focus");
+  };
+  const apply = (i) => { if (i != null && sel[i] !== paint) { sel[i] = paint; onChange(); el.children[i].classList.toggle("on", !!paint); } };
+  el.addEventListener("pointerdown", (e) => {
+    const i = cellAt(e.clientX, e.clientY);
+    if (i == null) return;
+    paint = sel[i] ? 0 : 1; apply(i); focus(i); loupe(e.clientX, e.clientY, i);
+    const move = (ev) => { const j = cellAt(ev.clientX, ev.clientY); apply(j); focus(j); loupe(ev.clientX, ev.clientY, j == null ? last : j); };
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); focus(null); loupe(0, 0, null); };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+    e.preventDefault();
+  });
+}
+
+function pickerSheet(disabled, current, label, onPick) {
+  const sh = $("#sheet");
+  let h = `<div class="sheet"><div><div class="row between" style="margin-bottom:10px"><b>${label}</b><button class="btn sm ghost" id="pkx">閉じる</button></div>`;
+  for (let s = 0; s < 4; s++) {
+    h += `<div class="pk">`;
+    for (let r = 12; r >= 0; r--) {
+      const id = r * 4 + s;
+      h += `<button class="s${s} ${id === current ? "sel" : ""}" data-id="${id}" ${disabled.has(id) && id !== current ? "disabled" : ""}>${EQ.RK[r]}<br><span style="font-size:11px">${SUITCH[s]}</span></button>`;
+    }
+    h += `</div>`;
+  }
+  h += `<button class="btn sm ghost" id="pkc">この枠をクリア</button></div></div>`;
+  sh.innerHTML = h;
+  const close = () => (sh.innerHTML = "");
+  sh.onclick = (e) => {
+    if (e.target.closest("#pkx") || e.target.classList.contains("sheet")) return close();
+    if (e.target.closest("#pkc")) { close(); return onPick(null); }
+    const b = e.target.closest("button[data-id]");
+    if (b && !b.disabled) { close(); onPick(+b.dataset.id); }
+  };
+}
+
+// ---------- 出題 ----------
+function heroPool() {
+  const h = S.settings.hero;
+  if (h.startsWith("pat:")) {
+    const pt = allPatterns().find((x) => x.id === h.slice(4));
+    if (pt) return rangeCombos(pt.sel);
+  } else if (h !== "all") return rangeCombos(topPercent(+h));
+  return null;
+}
+function heroLabel() {
+  const h = S.settings.hero;
+  if (h === "all") return "ランダム";
+  if (h.startsWith("pat:")) { const pt = allPatterns().find((x) => x.id === h.slice(4)); return pt ? pt.name : "ランダム"; }
+  return "上位" + h + "%";
+}
+function genQuestion() {
+  for (;;) {
+    let hero;
+    const pool = heroPool();
+    if (!pool) {
+      const a = (Math.random() * 52) | 0;
+      let b; do { b = (Math.random() * 52) | 0; } while (b === a);
+      hero = [a, b];
+    } else {
+      hero = pool[(Math.random() * pool.length) | 0].slice();
+      if (Math.random() < 0.5) hero.reverse();
+    }
+    let street = S.settings.street;
+    if (street === "rand") street = ["pre", "flop", "turn", "river"][(Math.random() * 4) | 0];
+    const nb = { pre: 0, flop: 3, turn: 4, river: 5 }[street];
+    const used = new Set(hero), board = [];
+    while (board.length < nb) { const c = (Math.random() * 52) | 0; if (!used.has(c)) { used.add(c); board.push(c); } }
+    const rg = randomRange(S.settings.kind);
+    const dead = new Uint8Array(52); used.forEach((c) => (dead[c] = 1));
+    const V = rangeCombos(rg.sel, dead);
+    if (V.length < 8) continue;
+    return { hero, board, street, range: rg, V };
+  }
+}
+function newQuestion() { S.q = genQuestion(); S.phase = "ask"; S.res = null; S.guess = 50; render(); }
+
+function startSession() {
+  S.cur = { id: Date.now(), t0: Date.now(), heroLabel: heroLabel(), settings: Object.assign({}, S.settings), items: [] };
+  S.qview = "play";
+  newQuestion(); window.scrollTo(0, 0);
+}
+function endSession() {
+  if (S.cur && S.cur.items.length) {
+    S.cur.t1 = Date.now();
+    S.sessions.push(S.cur);
+    store.set("eqt_sessions", S.sessions);
+  }
+  S.cur = null; store.set("eqt_cur", null);
+  S.q = null; S.phase = "ask"; S.res = null; S.qview = "home";
+  render(); window.scrollTo(0, 0);
+}
+
+async function submitGuess() {
+  const cur = S.cur;
+  S.phase = "calc"; render();
+  const q = S.q, guess = S.guess;
+  const r = await computeEquity([q.hero], q.V, q.board, { samples: 400000 });
+  if (S.cur !== cur) return; // 計算中にセッションを終えた
+  const actual = r.eq * 100, err = Math.abs(guess - actual);
+  S.res = { r, actual, err, signed: guess - actual, grade: gradeOf(err), heat: heatFromBuckets(r.V, r) };
+  cur.items.push({ t: Date.now(), hero: q.hero, board: q.board, label: q.range.label, street: q.street, guess, actual: +actual.toFixed(2) });
+  store.set("eqt_cur", cur);
+  S.phase = "result"; render();
+}
+
+const absErr = (x) => Math.abs(x.guess - x.actual);
+const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+function statsHtml(items, withDots) {
+  if (!items.length) return `<div class="note">まだ回答がありません。1問答えると、ここに誤差がたまります。</div>`;
+  const errs = items.map(absErr);
+  const bias = mean(items.map((x) => x.guess - x.actual));
+  const cnt = GRADES.map((g) => errs.filter((e) => gradeOf(e).key === g.key).length);
+  return `<div class="panel">
+    <div class="kv">
+      <span>回答数</span><span>${items.length}問</span>
+      <span>平均誤差</span><span>${mean(errs).toFixed(1)}pt</span>
+      <span>見積もりの偏り</span><span>${bias >= 0 ? "+" : ""}${bias.toFixed(1)}pt ${Math.abs(bias) < 0.7 ? "(偏りなし)" : bias > 0 ? "(高めに見積もりがち)" : "(低めに見積もりがち)"}</span>
+    </div>
+    <div class="small dim" style="margin-top:14px">評価の分布</div>
+    <div class="gbar" style="margin-top:6px">${GRADES.map((g, i) => `<div style="width:${(cnt[i] / items.length) * 100}%;background:${g.color}"></div>`).join("")}</div>
+    <div class="gl">${GRADES.map((g, i) => `<span><i style="background:${g.color}"></i>${g.key} ${g.max > 100 ? "10pt超" : "≤" + g.max + "pt"} ${cnt[i]}</span>`).join("")}</div>
+    ${withDots ? `<div class="small dim" style="margin-top:14px">1問ごとの評価(左が古い)</div><div class="dots" style="margin-top:6px">${items.map((x) => `<span class="dot" style="background:${gradeOf(absErr(x)).color}"></span>`).join("")}</div>` : ""}
+  </div>`;
+}
+
+// ---------- 傾向の分析 ----------
+let TIER = null;
+function handTier(c) {
+  if (!TIER) TIER = [[10, topPercent(10)], [30, topPercent(30)], [50, topPercent(50)]];
+  const ci = cellOfCombo(c[0], c[1]);
+  for (const [p, sel] of TIER) if (sel[ci]) return `上位${p}%のハンド`;
+  return "下位50%のハンド";
+}
+function handKind(c) {
+  if ((c[0] >> 2) === (c[1] >> 2)) return "ポケットペア";
+  return (c[0] & 3) === (c[1] & 3) ? "スーテッド" : "オフスーツ";
+}
+function rangeBand(label) {
+  const m = /^上位(\d+)%$/.exec(label);
+  if (!m) return "パターン: " + label;
+  const n = +m[1];
+  return n <= 10 ? "狭いレンジ(上位10%以下)" : n <= 25 ? "中くらいのレンジ(上位11〜25%)" : "広いレンジ(上位26%以上)";
+}
+function eqBand(a) {
+  return a < 30 ? "大きく劣勢(30%未満)" : a < 45 ? "やや劣勢(30〜45%)" : a < 55 ? "ほぼ互角(45〜55%)" : a < 70 ? "やや優勢(55〜70%)" : "大きく優勢(70%以上)";
+}
+const DIMS = [
+  ["ストリート", (x) => STREET_LABEL[x.street]],
+  ["自分のハンドの種類", (x) => handKind(x.hero)],
+  ["自分のハンドの強さ", (x) => handTier(x.hero)],
+  ["相手のレンジ", (x) => rangeBand(x.label)],
+  ["実際のエクイティ", (x) => eqBand(x.actual)]
+];
+function groupStats(items, fn) {
+  const m = new Map();
+  for (const x of items) {
+    const k = fn(x);
+    const g = m.get(k) || { key: k, n: 0, abs: 0, sgn: 0 };
+    g.n++; g.abs += absErr(x); g.sgn += x.guess - x.actual;
+    m.set(k, g);
+  }
+  return [...m.values()].map((g) => ({ key: g.key, n: g.n, avg: g.abs / g.n, bias: g.sgn / g.n }));
+}
+const MIN_N = 3;
+function biasText(b) { return Math.abs(b) < 1 ? "偏りなし" : b > 0 ? `高め+${b.toFixed(1)}` : `低め${b.toFixed(1)}`; }
+function rowHtml(g) {
+  const gr = gradeOf(g.avg);
+  return `<div class="arow ${g.n < MIN_N ? "faint" : ""}"><div class="row between"><span>${g.key}</span><span class="dim small">${g.n}問</span></div>
+    <div class="row" style="gap:10px"><div class="abar"><div style="width:${Math.min(100, (g.avg / 15) * 100)}%;background:${gr.color}"></div></div><span style="min-width:104px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px">${g.avg.toFixed(1)}pt <span class="dim">${biasText(g.bias)}</span></span></div></div>`;
+}
+function analysisHtml(items) {
+  if (items.length < 5) return `<div class="panel"><div class="note">回答が5問以上たまると、ミスの傾向がここに出ます(今 ${items.length}問)。</div></div>`;
+  const all = [];
+  let sections = "";
+  for (const [title, fn] of DIMS) {
+    const gs = groupStats(items, fn);
+    gs.forEach((g) => all.push({ dim: title, ...g }));
+    gs.sort((a, b) => (b.n >= MIN_N) - (a.n >= MIN_N) || b.avg - a.avg);
+    sections += `<h2>${title}</h2><div class="panel">${gs.map(rowHtml).join("")}</div>`;
+  }
+  const hs = groupStats(items, (x) => EQ.CELLS[cellOfCombo(x.hero[0], x.hero[1])].label).filter((g) => g.n >= 2).sort((a, b) => b.avg - a.avg).slice(0, 8);
+  const worst = all.filter((g) => g.n >= MIN_N).sort((a, b) => b.avg - a.avg).slice(0, 3);
+  let h = `<div class="panel"><div class="small dim" style="margin-bottom:8px">誤差が大きい状況(各${MIN_N}問以上)</div>`;
+  h += worst.length ? worst.map((g, i) => `<div style="margin-bottom:10px"><div style="font-weight:700">${i + 1}. ${g.key} <span class="dim small" style="font-weight:400">(${g.dim})</span></div><div class="dim small">平均誤差 ${g.avg.toFixed(1)}pt・${g.n}問・${biasText(g.bias)}</div></div>`).join("") : `<div class="note">同じ状況が${MIN_N}問以上たまると表示されます。</div>`;
+  h += `</div>` + sections;
+  if (hs.length) h += `<h2>ハンド別(2問以上)</h2><div class="panel">${hs.map(rowHtml).join("")}</div>`;
+  return h + `<div class="note">バーは平均誤差(15pt = 満杯)。「高め/低め」は予想が実際より高かったか低かったかの平均です。</div>`;
+}
+
+function patternsHtml() {
+  const pats = allPatterns();
+  let h = `<div class="panel"><div class="row between" style="margin-bottom:10px"><b style="font-size:14px">パターン別レンジ</b><div class="row"><button class="btn sm ghost" id="edNew">+ 登録</button><button class="btn sm ghost" id="patToggle">閉じる</button></div></div>
+  <div class="note" style="margin-bottom:10px">タップでオン/オフ。オンのものが「パターン別」で出題されます。</div><div class="row wrap">`;
+  if (!pats.length) h += `<span class="note">まだ登録がありません。「+ 登録」から、自分のレンジを追加してください。</span>`;
+  for (const x of pats) {
+    const on = !S.offPatterns.includes(x.id);
+    h += `<span class="row" style="gap:2px"><button class="chip ${on ? "on" : ""}" data-pat="${x.id}">${x.name}</button><button class="chip" data-patdel="${x.id}" style="color:var(--g-c)">${S.delId === x.id ? "本当に削除?" : "削除"}</button></span>`;
+  }
+  return h + `</div></div>`;
+}
+function editorHtml() {
+  const e = S.editor;
+  return `<div class="panel"><b style="font-size:14px">パターンを登録</b>
+    <div style="margin-top:10px"><input type="text" id="edName" placeholder="名前(例: BTNオープン)" value="${e.name.replace(/"/g, "&quot;")}" autocomplete="off"></div>
+    <div class="row between" style="margin-top:12px"><span class="small dim">上位ハンドをスライダーで選ぶ</span><b id="edTopV">${e.top ? "上位 " + e.top + "%" : "0%"}</b></div>
+    <input type="range" id="edTop" min="0" max="100" step="1" value="${e.top || 0}">
+    <div class="small dim" id="edCount" style="margin:4px 0 8px">タップ・なぞって選択:${comboLabel(countCombos(e.sel))}</div>
+    ${gridHtml(e.sel, { id: "gE", head: "E" })}
+    <div class="row wrap" style="margin-top:10px">${[10, 20, 30, 50].map((x) => `<button class="chip" data-edtop="${x}">上位${x}%</button>`).join("")}${QUICK.map(([l, t]) => `<button class="chip" data-edadd="${t}">${l}</button>`).join("")}<button class="chip" id="edClear">クリア</button></div>
+    <div class="row" style="margin-top:14px"><button class="btn ghost" id="edCancel">キャンセル</button><button class="btn" id="edSave">保存</button></div>
+    ${e.msg ? `<div class="err">${e.msg}</div>` : ""}
+  </div>`;
+}
+
+// ---------- 画面 ----------
+const STREET_LABEL = { pre: "プリフロップ", flop: "フロップ", turn: "ターン", river: "リバー" };
+const fmtDate = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+
+function homeHtml() {
+  const set = S.settings;
+  const chips = (key, opts) => opts.map(([v, l]) => `<button class="chip ${set[key] === v ? "on" : ""}" data-set="${key}" data-v="${v}">${l}</button>`).join("");
+  const pats = allPatterns();
+  let h = ``;
+  h += `<div class="panel"><div class="small dim" style="margin-bottom:8px">自分のハンド</div><div class="row wrap">${chips("hero", [["all", "ランダム"], ["50", "上位50%"], ["30", "上位30%"], ["20", "上位20%"], ["10", "上位10%"]])}</div>
+    <div class="small dim" style="margin:12px 0 8px">登録したレンジから</div><div class="row wrap">${pats.length ? "" : `<span class="note">まだありません。下の「パターン別レンジを管理」から登録できます。</span>`}${pats.map((x) => `<button class="chip ${set.hero === "pat:" + x.id ? "on" : ""}" data-set="hero" data-v="pat:${x.id}">${x.name}</button>`).join("")}</div>
+    <div class="small dim" style="margin:14px 0 8px">ストリート</div><div class="row wrap">${chips("street", [["pre", "プリフロップ"], ["flop", "フロップ"], ["turn", "ターン"], ["river", "リバー"], ["rand", "ランダム"]])}</div>
+    <div class="small dim" style="margin:12px 0 8px">相手のレンジ</div><div class="row wrap">${chips("kind", [["mix", "ミックス"], ["top", "上位%のみ"], ["shape", "パターン別のみ"]])}</div></div>`;
+  h += `<div style="margin-bottom:10px"><button class="btn" id="startBtn">START</button></div>`;
+  h += `<div style="margin-bottom:18px"><button class="btn ghost" id="openHistory">履歴${S.sessions.length ? `(${S.sessions.length}回)` : ""}</button></div>`;
+  return h + (S.patOpen ? patternsHtml() : `<button class="btn ghost" id="patToggle">パターン別レンジを管理</button>`);
+}
+
+function playHtml() {
+  const q = S.q;
+  let h = `<div class="row between" style="margin-bottom:12px"><div><b>セッション中</b> <span class="dim small">${S.cur.items.length}問回答 ・ ハンド: ${S.cur.heroLabel}</span></div>${S.phase === "result" ? "" : `<button class="btn sm ghost" data-end="1">セッション終了</button>`}</div>`;
+  const qH = `<div class="panel">
+    <div class="row between" style="align-items:flex-start">
+      <div><div class="small dim" style="margin-bottom:6px">あなたのハンド</div><div class="cards">${q.hero.map((c) => cardHtml(c)).join("")}</div></div>
+      <div style="text-align:right"><div class="small dim" style="margin-bottom:6px">${STREET_LABEL[q.street]}${q.board.length ? "のボード" : ""}</div>
+        <div class="cards" style="justify-content:flex-end">${q.board.length ? q.board.map((c) => cardHtml(c, true)).join("") : `<span class="dim small" style="padding:18px 0">ボードなし</span>`}</div></div>
+    </div>
+    <div class="small dim" style="margin:14px 0 6px">相手のレンジ: <b style="color:var(--text)">${q.range.label}</b></div>
+    ${gridHtml(q.range.sel, { ro: true, heat: S.phase === "result" ? S.res.heat : null })}
+    ${S.phase === "result" ? `<div class="small dim" style="margin-top:10px">vs 相手ハンド別エクイティ(%)</div>` + legendHtml() + `<div class="note" style="margin-top:8px" id="cellInfo">${CELL_HINT}</div>` : ""}
+  </div>`;
+  let ansH = "";
+  if (S.phase === "ask") {
+    ansH = `<div class="panel"><div class="small dim" style="text-align:center">このレンジ全体に対する、あなたのエクイティは?</div>
+      <div class="guess"><span id="gv">${S.guess}</span><small>%</small></div>
+      <input type="range" id="gs" min="0" max="100" step="1" value="${S.guess}">
+      <div class="row"><button class="step" data-d="-5">−5</button><button class="step" data-d="-1">−1</button><button class="step" data-d="1">+1</button><button class="step" data-d="5">+5</button></div>
+      <div style="margin-top:12px"><button class="btn" id="submit">答える</button></div></div>`;
+  } else if (S.phase === "calc") {
+    ansH = `<div class="panel spin">計算中…</div>`;
+  } else {
+    const r = S.res, last = S.cur.items[S.cur.items.length - 1];
+    ansH = `<div class="panel">
+      <div class="row between" style="margin-bottom:12px"><span class="grade" style="background:${r.grade.color}">${r.grade.key}　${r.grade.label}</span><span class="dim small">${r.r.exact ? "厳密(全通り)" : `シミュレーション ±${(r.r.se * 100 * 2).toFixed(2)}%`}</span></div>
+      <div class="kpi main"><div class="kl">実際のエクイティ</div><div class="kbig">${r.actual.toFixed(1)}<small>%</small></div></div>
+      <div class="kpis">
+        <div class="kpi"><div class="kl">あなたの予想</div><div class="kn">${last.guess}<small>%</small></div></div>
+        <div class="kpi"><div class="kl">誤差(${r.signed > 0.5 ? "高め" : r.signed < -0.5 ? "低め" : "ほぼ一致"})</div><div class="kn" style="color:${r.grade.color}">${r.signed >= 0 ? "+" : "−"}${Math.abs(r.signed).toFixed(1)}<small>pt</small></div></div>
+      </div>
+      <div class="kv" style="margin-top:12px"><span>勝ち / 引き分け</span><span>${pct(r.r.win)}% / ${pct(r.r.tie)}%</span></div>
+      <div style="margin-top:14px"><button class="btn" id="next">次の問題</button></div>
+      <div style="margin-top:8px"><button class="btn ghost" data-end="1">セッション終了</button></div></div>`;
+  }
+  h += S.phase === "result" ? ansH + qH : qH + ansH;
+  return h + `<h2>このセッションの成績</h2>` + statsHtml(S.cur.items, true);
+}
+
+function historyHtml() {
+  let h = `<div class="row between"><h1>履歴</h1><button class="btn sm ghost" id="hBack">戻る</button></div>`;
+  if (!S.sessions.length) return h + `<div class="panel note">まだ履歴がありません。STARTから出題を始めて、「セッション終了」を押すとここに保存されます。</div>`;
+  const items = S.sessions.flatMap((s) => s.items);
+  const recent = S.sessions.slice(-12);
+  const allErr = items.map(absErr), allBias = mean(items.map((x) => x.guess - x.actual));
+  h += `<div class="kpis3">
+    <div class="kpi"><div class="kl">回答数</div><div class="kn">${items.length}<small>問</small></div></div>
+    <div class="kpi"><div class="kl">平均誤差</div><div class="kn">${mean(allErr).toFixed(1)}<small>pt</small></div></div>
+    <div class="kpi"><div class="kl">偏り</div><div class="kn">${allBias >= 0 ? "+" : ""}${allBias.toFixed(1)}<small>pt</small></div></div></div>`;
+  const avgs = recent.map((s) => mean(s.items.map(absErr)));
+  if (S.sessions.length < 3) h += `<h2>誤差の推移</h2><div class="panel"><div class="note">セッションが3回たまると、誤差の推移グラフが表示されます(あと${3 - S.sessions.length}回)。</div></div>`;
+  else h += `<h2>誤差の推移(セッションごとの平均誤差)</h2><div class="panel"><div class="plot"><i style="bottom:33.3%"><em>5pt</em></i><i style="bottom:66.7%"><em>10pt</em></i><div class="bars">${avgs.map((a) => `<div class="tcol"><div class="tbar" style="height:${Math.max(3, Math.min(100, (a / 15) * 100))}%;background:${gradeOf(a).color}"></div></div>`).join("")}</div></div><div class="xl">${avgs.map((a) => `<span>${a.toFixed(1)}</span>`).join("")}</div><div class="note" style="margin-top:6px">左が古い。低いほど正確。点線は5ptと10pt。</div></div>`;
+  h += `<h2>ミスの傾向(全${items.length}問)</h2>` + analysisHtml(items);
+  h += `<h2>セッション一覧</h2>`;
+  h += S.sessions.slice().reverse().map((s) => {
+    const errs = s.items.map(absErr), cnt = GRADES.map((g) => errs.filter((e) => gradeOf(e).key === g.key).length);
+    return `<button class="panel sess" data-sess="${s.id}"><div class="row between"><b>${fmtDate(s.t0)}</b><span class="dim small">${s.items.length}問 ・ 平均誤差 ${mean(errs).toFixed(1)}pt</span></div>
+      <div class="dim small" style="margin:4px 0 8px">ハンド: ${s.heroLabel}</div>
+      <div class="gbar">${GRADES.map((g, i) => `<div style="width:${(cnt[i] / s.items.length) * 100}%;background:${g.color}"></div>`).join("")}</div></button>`;
+  }).join("");
+  return h;
+}
+function sessionDetailHtml() {
+  const s = S.sessions.find((x) => String(x.id) === String(S.detailId));
+  if (!s) { S.qview = "history"; return historyHtml(); }
+  let h = `<div class="row between"><h1>${fmtDate(s.t0)}のセッション</h1><button class="btn sm ghost" id="sBack">戻る</button></div>`;
+  h += `<div class="note" style="margin-bottom:10px">ハンド: ${s.heroLabel} ・ ${s.items.length}問</div>` + statsHtml(s.items, true);
+  h += `<h2>1問ずつ</h2>` + s.items.map((x) => {
+    const e = x.guess - x.actual, gr = gradeOf(Math.abs(e));
+    return `<div class="panel qrow"><span class="dot" style="background:${gr.color};flex:none"></span>
+      <div class="cards" style="flex:none">${x.hero.map((c) => cardHtml(c, true)).join("")}</div>
+      <div style="flex:1;min-width:0"><div class="small">${STREET_LABEL[x.street]} ・ 相手 ${x.label}</div>
+        <div class="cards" style="margin-top:4px">${x.board.map((c) => cardHtml(c, true)).join("")}</div></div>
+      <div style="text-align:right;font-variant-numeric:tabular-nums;flex:none"><div style="font-weight:700">${x.actual.toFixed(1)}%</div><div class="dim small">予想 ${x.guess}</div><div class="small" style="color:${gr.color}">${e >= 0 ? "+" : "−"}${Math.abs(e).toFixed(1)}</div></div></div>`;
+  }).join("");
+  h += `<div style="margin-top:14px"><button class="btn sm ghost" id="sessDel">${S.delSess === s.id ? "もう一度押すと、このセッションを削除します" : "このセッションを削除"}</button></div>`;
+  return h;
+}
+
+function quizHtml() {
+  if (S.editor) return editorHtml();
+  if (S.qview === "play" && S.cur) return playHtml();
+  if (S.qview === "history") return historyHtml();
+  if (S.qview === "detail") return sessionDetailHtml();
+  return homeHtml();
+}
+
+// ---------- 計算 ----------
+function calcDead(excludeSide) {
+  const c = S.calc, set = new Set();
+  c.board.forEach((x) => x != null && set.add(x));
+  for (const side of ["A", "B"]) if (side !== excludeSide && c[side].mode === "hand") c[side].cards.forEach((x) => x != null && set.add(x));
+  return set;
+}
+function sideHtml(side, title) {
+  const p = S.calc[side];
+  let h = `<div class="panel"><div class="row between" style="margin-bottom:10px"><b>${title}</b>
+    <div class="seg" style="width:170px"><button data-side="${side}" data-mode="hand" class="${p.mode === "hand" ? "on" : ""}">ハンド</button><button data-side="${side}" data-mode="range" class="${p.mode === "range" ? "on" : ""}">レンジ</button></div></div>`;
+  if (p.mode === "hand") {
+    h += `<div class="cards">${p.cards.map((c, i) => c == null ? `<button class="slot" data-pick="${side}:${i}">+</button>` : `<button class="slot" style="border:0;padding:0;background:none" data-pick="${side}:${i}">${cardHtml(c)}</button>`).join("")}</div>`;
+  } else {
+    const n = countCombos(p.sel);
+    h += `<div class="row between"><span class="small dim">上位ハンドをスライダーで選ぶ</span><b id="ctV${side}">${p.top ? "上位 " + p.top + "%" : "0%"}</b></div>
+      <input type="range" id="ctop${side}" min="0" max="100" step="1" value="${p.top || 0}">
+      <div class="small dim" style="margin-bottom:8px">タップ・なぞって選択:${comboLabel(n)}</div>
+      <div id="grid${side}">${gridHtml(p.sel, { id: "g" + side, head: side })}</div>
+      <div class="row wrap" style="margin-top:10px">${[10, 20, 30, 50].map((x) => `<button class="chip" data-top="${side}:${x}">上位${x}%</button>`).join("")}${QUICK.map(([l, t]) => `<button class="chip" data-add="${side}:${t}">${l}</button>`).join("")}<button class="chip" data-clear="${side}">クリア</button><button class="chip" data-all="${side}">全て</button><button class="chip" data-reg="${side}">この選択を登録</button></div>
+      <div class="small dim" style="margin:12px 0 8px">パターン(タップで追加、もう一度で削除)</div><div class="row wrap">${allPatterns().map((x) => `<button class="chip ${p.pats.includes(x.id) ? "on" : ""}" data-load="${side}:${x.id}">${x.name}</button>`).join("")}<button class="chip" id="edNew">+ 新規</button></div>${allPatterns().length ? "" : `<div class="note" style="margin-top:8px">まだ登録がありません。「この選択を登録」か「+ 新規」で追加できます。</div>`}`;
+  }
+  return h + `</div>`;
+}
+function calcHtml() {
+  const c = S.calc;
+  let h = ``;
+  if (S.editor) return h + editorHtml();
+  h += `<div class="panel"><div class="small dim" style="margin-bottom:8px">ボード(任意)</div><div class="cards">${c.board.map((x, i) => x == null ? `<button class="slot sm" data-pick="board:${i}">+</button>` : `<button class="slot sm" style="border:0;padding:0;background:none" data-pick="board:${i}">${cardHtml(x, true)}</button>`).join("")}</div></div>`;
+  h += sideHtml("A", "自分") + sideHtml("B", "相手");
+  h += `<button class="btn" id="go" ${c.busy ? "disabled" : ""}>${c.busy ? "計算中…" : "計算する"}</button>`;
+  if (c.out) {
+    const o = c.out;
+    if (o.error) h += `<div class="panel err" style="margin-top:12px">${o.error}</div>`;
+    else {
+      const r = o.r;
+      h += `<div class="panel" style="margin-top:12px"><div class="row between" style="align-items:flex-start"><div><div class="dim small">自分のエクイティ</div><div class="big">${pct(r.eq)}<small>%</small></div></div>
+        <div style="text-align:right"><div class="dim small">相手</div><div class="big" style="color:var(--dim)">${pct(1 - r.eq)}<small>%</small></div></div></div>
+        <div class="bar2" style="margin-top:10px"><div style="width:${r.win * 100}%;background:var(--win)"></div><div style="width:${r.tie * 100}%;background:var(--tie)"></div><div style="width:${(1 - r.win - r.tie) * 100}%;background:var(--lose)"></div></div>
+        <div class="gl" style="margin-top:6px"><span><i style="background:var(--win)"></i>勝ち ${pct(r.win)}%</span><span><i style="background:var(--tie)"></i>引き分け ${pct(r.tie)}%</span><span><i style="background:var(--lose)"></i>負け ${pct(1 - r.win - r.tie)}%</span></div>
+        <div class="note" style="margin-top:10px">エクイティ = 勝ち + 引き分け÷2</div>
+        <div class="note faintnote">${r.exact ? "厳密(全通り)" : `誤差 ±${(r.se * 100 * 2).toFixed(2)}%`} ・ 相手レンジ ${o.vCount}コンボ${o.hCount > 1 ? ` ・ 自分 ${o.hCount}コンボ` : ""}</div></div>`;
+      if (o.heat) h += `<div class="panel"><div class="small dim" style="margin-bottom:8px">vs 相手ハンド別エクイティ(%)</div>${gridHtml(o.sel, { ro: true, heat: o.heat })}${legendHtml()}<div class="note" id="cellInfo" style="margin-top:8px">${CELL_HINT}</div></div>`;
+    }
+  }
+  return h;
+}
+async function runCalc() {
+  const c = S.calc;
+  const bd = c.board.filter((x) => x != null);
+  const dead = new Uint8Array(52); bd.forEach((x) => (dead[x] = 1));
+  const sideCombos = (side) => {
+    const p = c[side];
+    if (p.mode === "hand") {
+      if (p.cards.some((x) => x == null)) return { error: `${side === "A" ? "自分" : "相手"}のハンドを2枚選んでください` };
+      return { list: [p.cards.slice()] };
+    }
+    const list = rangeCombos(p.sel);
+    if (!list.length) return { error: `${side === "A" ? "自分" : "相手"}のレンジが空です` };
+    return { list };
+  };
+  const A = sideCombos("A"), B = sideCombos("B");
+  if (A.error || B.error) { c.out = { error: A.error || B.error }; return render(); }
+  c.busy = true; render();
+  await new Promise((r) => setTimeout(r, 30));
+  const r = await computeEquity(A.list, B.list, bd, { samples: 300000 });
+  c.busy = false;
+  if (!r) c.out = { error: "ボード・ハンドが重なっていて、有効な組み合わせがありません" };
+  else {
+    const single = A.list.length === 1 && c.B.mode === "range";
+    c.out = { r, vCount: r.V.length, hCount: A.list.length, heat: single ? heatFromBuckets(r.V, r) : null, sel: single ? Uint8Array.from(c.B.sel) : null };
+  }
+  render();
+}
+
+// カード選択: 空いている次の枠があれば、閉じずに続けて選ばせる
+function openPicker(side, i) {
+  const arr = side === "board" ? S.calc.board : S.calc[side].cards;
+  const dis = calcDead(side === "board" ? null : side);
+  arr.forEach((x, j) => { if (j !== i && x != null) dis.add(x); });
+  if (side !== "board") S.calc.board.forEach((x) => x != null && dis.add(x));
+  const label = side === "board" ? `ボード ${i + 1}枚目を選ぶ` : `${side === "A" ? "自分" : "相手"}のハンド ${i + 1}枚目を選ぶ`;
+  pickerSheet(dis, arr[i], label, (id) => {
+    arr[i] = id; S.calc.out = null; render();
+    if (id != null && i + 1 < arr.length && arr[i + 1] == null) openPicker(side, i + 1);
+  });
+}
+
+// ---------- 描画・イベント ----------
+function render() {
+  const app = $("#app");
+  const scroll = window.scrollY;
+  app.innerHTML = S.tab === "quiz" ? quizHtml() : calcHtml();
+  document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === S.tab));
+  if (S.tab === "calc") for (const side of ["A", "B"]) {
+    const g = $("#g" + side);
+    if (g) attachGridPaint(g, S.calc[side].sel, () => { const ct = $("#grid" + side).previousElementSibling; if (ct) ct.textContent = `タップ・なぞって選択:${comboLabel(countCombos(S.calc[side].sel))}`; });
+  }
+  if (S.editor) {
+    const g = $("#gE");
+    if (g) attachGridPaint(g, S.editor.sel, () => { const ct = $("#edCount"); if (ct) ct.textContent = `タップ・なぞって選択:${comboLabel(countCombos(S.editor.sel))}`; });
+  }
+  window.scrollTo(0, scroll);
+}
+const savePatterns = () => { store.set("eqt_patterns", S.patterns); store.set("eqt_off", S.offPatterns); };
+
+document.addEventListener("click", (e) => {
+  const t = e.target;
+  const tab = t.closest(".tabs button");
+  if (tab) { S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); return; }
+  if (t.closest("#sheet")) return;
+  const cell = t.closest(".cell");
+  if (cell && cell.closest(".grid.ro")) { // ヒートマップのセル詳細
+    const i = +cell.dataset.i, info = $("#cellInfo");
+    const heat = S.tab === "quiz" ? (S.res && S.res.heat) : (S.calc.out && S.calc.out.heat);
+    if (info && heat && !Number.isNaN(heat[i])) info.textContent = cellDetail(heat, i);
+    return;
+  }
+  // 見出しタップ(行・列)
+  const hh = t.closest("[data-hr],[data-hc]");
+  if (hh) {
+    const kind = hh.dataset.hr != null ? "r" : "c", [side, i] = (hh.dataset.hr != null ? hh.dataset.hr : hh.dataset.hc).split(":");
+    const sel = side === "E" ? S.editor.sel : S.calc[side].sel;
+    toggleHeader(sel, kind, +i);
+    if (side !== "E") { S.calc[side].pats = []; S.calc.out = null; } else S.editor.top = 0;
+    render(); return;
+  }
+  // パターン別レンジ
+  if (t.closest("#edNew")) { S.editor = { name: "", sel: new Uint8Array(169), text: "", err: "", msg: "" }; render(); window.scrollTo(0, 0); return; }
+  if (t.closest("#edCancel")) { S.editor = null; render(); return; }
+  if (t.closest("#edClear")) { S.editor.top = 0; S.editor.sel = new Uint8Array(169); S.editor.text = ""; S.editor.err = ""; render(); return; }
+  const et = t.closest("[data-edtop]");
+  if (et) { S.editor.top = +et.dataset.edtop; S.editor.sel = topPercent(+et.dataset.edtop); S.editor.text = ""; S.editor.err = ""; render(); return; }
+  const ea = t.closest("[data-edadd]");
+  if (ea) { addRange(S.editor.sel, ea.dataset.edadd); render(); return; }
+  if (t.closest("#edSave")) {
+    const e = S.editor, name = e.name.trim(), idx = [];
+    e.sel.forEach((v, i) => v && idx.push(i));
+    if (!name) { e.msg = "名前を入力してください"; render(); return; }
+    if (idx.length < 1 || countCombos(e.sel) < 8) { e.msg = "レンジが小さすぎます(8コンボ以上選んでください)"; render(); return; }
+    S.patterns.push({ id: "c" + Date.now(), name, idx, used: Date.now() }); savePatterns(); S.editor = null;
+    render(); return;
+  }
+  const pt = t.closest("[data-pat]");
+  if (pt) { const id = pt.dataset.pat, i = S.offPatterns.indexOf(id); touchPattern(id); if (i >= 0) S.offPatterns.splice(i, 1); else S.offPatterns.push(id); savePatterns(); render(); return; }
+  const pd = t.closest("[data-patdel]");
+  if (pd) {
+    const id = pd.dataset.patdel;
+    if (S.delId !== id) { S.delId = id; render(); return; }
+    S.patterns = S.patterns.filter((x) => x.id !== id); S.offPatterns = S.offPatterns.filter((x) => x !== id); S.delId = null; savePatterns(); render(); return;
+  }
+  const rg = t.closest("[data-reg]");
+  if (rg) { S.editor = { name: "", sel: Uint8Array.from(S.calc[rg.dataset.reg].sel), text: "", err: "", msg: "" }; render(); window.scrollTo(0, 0); return; }
+  const ld = t.closest("[data-load]");
+  if (ld) {
+    const [side, id] = ld.dataset.load.split(":"), pt2 = allPatterns().find((x) => x.id === id);
+    if (pt2) {
+      touchPattern(id);
+      const pc = S.calc[side], sel = pc.sel;
+      if (pc.pats.includes(pt2.id)) {
+        pc.pats = pc.pats.filter((x) => x !== pt2.id);
+        const keep = new Uint8Array(169);
+        allPatterns().forEach((o) => { if (pc.pats.includes(o.id)) o.sel.forEach((v, i) => v && (keep[i] = 1)); });
+        pt2.sel.forEach((v, i) => { if (v && !keep[i]) sel[i] = 0; });
+      } else { pc.pats.push(pt2.id); pt2.sel.forEach((v, i) => v && (sel[i] = 1)); }
+      S.calc.out = null; render();
+    }
+    return;
+  }
+  const set = t.closest("[data-set]");
+  if (set) { if (set.dataset.v.startsWith("pat:")) touchPattern(set.dataset.v.slice(4)); S.settings[set.dataset.set] = set.dataset.v; store.set("eqt_settings", S.settings); render(); return; }
+  if (t.closest("#patToggle")) { S.patOpen = !S.patOpen; render(); return; }
+  if (t.closest("#startBtn")) return startSession();
+  if (t.closest("[data-end]")) return endSession();
+  if (t.closest("#openHistory")) { S.qview = "history"; render(); window.scrollTo(0, 0); return; }
+  if (t.closest("#hBack")) { S.qview = "home"; render(); window.scrollTo(0, 0); return; }
+  const se = t.closest("[data-sess]");
+  if (se) { S.detailId = se.dataset.sess; S.delSess = null; S.qview = "detail"; render(); window.scrollTo(0, 0); return; }
+  if (t.closest("#sBack")) { S.qview = "history"; S.delSess = null; render(); window.scrollTo(0, 0); return; }
+  if (t.closest("#sessDel")) {
+    const sid = S.sessions.find((x) => String(x.id) === String(S.detailId));
+    if (!sid) return;
+    if (S.delSess !== sid.id) { S.delSess = sid.id; render(); return; }
+    S.sessions = S.sessions.filter((x) => x !== sid); store.set("eqt_sessions", S.sessions); S.delSess = null; S.qview = "history"; render(); window.scrollTo(0, 0); return;
+  }
+  if (t.closest("#submit")) return submitGuess();
+  if (t.closest("#next")) return newQuestion();
+  const step = t.closest(".step");
+  if (step) { S.guess = Math.max(0, Math.min(100, S.guess + +step.dataset.d)); $("#gv").textContent = S.guess; $("#gs").value = S.guess; return; }
+  // 電卓
+  const mode = t.closest("[data-mode]");
+  if (mode) { S.calc[mode.dataset.side].mode = mode.dataset.mode; S.calc.out = null; render(); return; }
+  const pick = t.closest("[data-pick]");
+  if (pick) { const [side, idx] = pick.dataset.pick.split(":"); openPicker(side, +idx); return; }
+  const ad = t.closest("[data-add]");
+  if (ad) { const [side, txt] = ad.dataset.add.split(":"); addRange(S.calc[side].sel, txt); S.calc.out = null; render(); return; }
+  const top = t.closest("[data-top]");
+  if (top) { const [side, p] = top.dataset.top.split(":"); S.calc[side].top = +p; S.calc[side].sel = topPercent(+p); S.calc[side].pats = []; S.calc[side].text = ""; S.calc.err[side] = ""; S.calc.out = null; render(); return; }
+  const cl = t.closest("[data-clear]");
+  if (cl) { S.calc[cl.dataset.clear].sel = new Uint8Array(169); S.calc[cl.dataset.clear].pats = []; S.calc[cl.dataset.clear].top = 0; S.calc[cl.dataset.clear].text = ""; S.calc.out = null; render(); return; }
+  const al = t.closest("[data-all]");
+  if (al) { S.calc[al.dataset.all].sel = new Uint8Array(169).fill(1); S.calc[al.dataset.all].pats = []; S.calc.out = null; render(); return; }
+  if (t.closest("#go")) return runCalc();
+});
+document.addEventListener("input", (e) => {
+  if (e.target.id === "edName") { S.editor.name = e.target.value; return; }
+  if (e.target.id && e.target.id.startsWith("ctop")) {
+    const side = e.target.id.slice(4), v = +e.target.value, pc = S.calc[side];
+    pc.top = v; pc.sel = topPercent(v); pc.pats = []; S.calc.out = null;
+    $("#ctV" + side).textContent = v ? "上位 " + v + "%" : "0%";
+    const g = $("#g" + side);
+    if (g) for (let i = 0; i < 169; i++) g.children[i].classList.toggle("on", !!pc.sel[i]);
+    $("#grid" + side).previousElementSibling.textContent = `タップ・なぞって選択:${comboLabel(countCombos(pc.sel))}`;
+    return;
+  }
+  if (e.target.id === "edTop") {
+    const v = +e.target.value, ed = S.editor;
+    ed.top = v; ed.sel = topPercent(v);
+    $("#edTopV").textContent = v ? "上位 " + v + "%" : "0%";
+    const g = $("#gE");
+    if (g) for (let i = 0; i < 169; i++) g.children[i].classList.toggle("on", !!ed.sel[i]);
+    $("#edCount").textContent = `タップ・なぞって選択:${comboLabel(countCombos(ed.sel))}`;
+    return;
+  }
+  if (e.target.id === "gs") { S.guess = +e.target.value; $("#gv").textContent = S.guess; }
+});
+
+
+(function migrate() {
+  const old = store.get("eqt_history", []);
+  if (old.length) {
+    S.sessions.unshift({ id: old[0].t, t0: old[0].t, t1: old[old.length - 1].t, heroLabel: "以前の記録", settings: {}, items: old });
+    try { localStorage.removeItem("eqt_history"); } catch (e) {}
+  }
+  const cur = store.get("eqt_cur", null);
+  if (cur && cur.items && cur.items.length) { cur.t1 = cur.items[cur.items.length - 1].t; S.sessions.push(cur); }
+  store.set("eqt_cur", null);
+  if (old.length || (cur && cur.items)) store.set("eqt_sessions", S.sessions);
+})();
+render();
+</script>
+</body>
+</html>
