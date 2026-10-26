@@ -140,6 +140,7 @@ a{color:var(--sel)}
 .big small{font-size:.5em;color:var(--dim);margin-left:2px;font-weight:700}
 .faintnote{color:#8a919c;margin-top:2px}
 #go{scroll-margin-top:84px}
+#calcres{scroll-margin-top:84px}
 .foot{max-width:480px;margin:8px auto 32px;padding:0 max(16px,env(safe-area-inset-left,0px));font-size:12px;line-height:1.7;color:#8a919c}
 .kbig small,.kn small{font-size:.4em;color:var(--dim);margin-left:2px;font-weight:700}
 .kn{font-size:30px;font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums}
@@ -150,7 +151,7 @@ a{color:var(--sel)}
 </style>
 </head>
 <body>
-<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span><small style="color:var(--faint);font-size:10px;margin-left:6px">v2</small>
+<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span><small style="color:var(--faint);font-size:10px;margin-left:6px">v3</small>
 <nav class="tabs">
   <button data-tab="quiz" class="on">出題</button>
   <button data-tab="calc">計算</button>
@@ -701,7 +702,7 @@ function calcHtml() {
     if (o.error) h += `<div class="panel err" style="margin-top:12px">${o.error}</div>`;
     else {
       const r = o.r;
-      h += `<div class="panel" style="margin-top:12px"><div class="row between" style="align-items:flex-start"><div><div class="dim small">自分のエクイティ</div><div class="big">${pct(r.eq)}<small>%</small></div></div>
+      h += `<div class="panel" id="calcres" style="margin-top:12px"><div class="row between" style="align-items:flex-start"><div><div class="dim small">自分のエクイティ</div><div class="big">${pct(r.eq)}<small>%</small></div></div>
         <div style="text-align:right"><div class="dim small">相手</div><div class="big" style="color:var(--dim)">${pct(1 - r.eq)}<small>%</small></div></div></div>
         <div class="bar2" style="margin-top:10px"><div style="width:${r.win * 100}%;background:var(--win)"></div><div style="width:${r.tie * 100}%;background:var(--tie)"></div><div style="width:${(1 - r.win - r.tie) * 100}%;background:var(--lose)"></div></div>
         <div class="gl" style="margin-top:6px"><span><i style="background:var(--win)"></i>勝ち ${pct(r.win)}%</span><span><i style="background:var(--tie)"></i>引き分け ${pct(r.tie)}%</span><span><i style="background:var(--lose)"></i>負け ${pct(1 - r.win - r.tie)}%</span></div>
@@ -738,6 +739,7 @@ async function runCalc() {
     c.out = { r, vCount: r.V.length, hCount: A.list.length, heat: single ? heatFromBuckets(r.V, r) : null, sel: single ? Uint8Array.from(c.B.sel) : null };
   }
   render();
+  const rp = $("#calcres"); if (rp) rp.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // カード選択: 空いている次の枠があれば、閉じずに続けて選ばせる
