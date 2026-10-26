@@ -20,7 +20,7 @@
   --bg:#010102; --surface:#0f1011; --surface2:#18191a; --line:#23252a; --text:#e9eef2; --dim:#a3adbb; --faint:#4b5565;
   --accent:#c6f432; --accent-ink:#141b02; --btn:#c6f432; --btn-ink:#141b02;
   --sel:#e9eef2; --sel-ink:#0b0c0e;
-  --g-s:#4aa3ff; --g-a:#9ccbff; --g-b:#f2cf3c; --g-c:#ff9a3d; --g-d:#a64dd6;
+  --g-s:#a0f7e6; --g-a:#25d4b8; --g-b:#b58cff; --g-c:#ffa0d0; --g-d:#e8103c;
   --win:#ffb02e; --tie:#d9d9df; --lose:#5b7cff;
   --suit-s:#dfe1e8; --suit-h:#ff6b6b; --suit-d:#6ea8ff; --suit-c:#5fe08a;
 }
@@ -94,7 +94,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;heigh
 input[type=range]::-moz-range-track{height:8px;border-radius:4px;background:#2d3139}
 input[type=range]::-moz-range-thumb{width:30px;height:30px;border-radius:50%;background:var(--sel);border:0}
 .result-top{text-align:center;padding:6px 0 2px}
+
 .grade{display:inline-block;padding:5px 14px;border-radius:999px;font-weight:800;color:#0d0e10;font-size:15px}
+.grade.d{color:#fff}
 .big{font-size:44px;font-weight:800;font-variant-numeric:tabular-nums}
 .kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:14px}
 .kv span:nth-child(odd){color:var(--dim)}
@@ -151,7 +153,7 @@ a{color:var(--sel)}
 </style>
 </head>
 <body>
-<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span><small style="color:var(--faint);font-size:10px;margin-left:6px">v4</small>
+<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span><small style="color:var(--faint);font-size:10px;margin-left:6px">v5</small>
 <nav class="tabs">
   <button data-tab="quiz" class="on">出題</button>
   <button data-tab="calc">計算</button>
@@ -543,7 +545,7 @@ function patternsHtml() {
   if (!pats.length) h += `<span class="note">まだ登録がありません。「+ 登録」から、自分のレンジを追加してください。</span>`;
   for (const x of pats) {
     const on = !S.offPatterns.includes(x.id);
-    h += `<span class="row" style="gap:2px"><button class="chip ${on ? "on" : ""}" data-pat="${x.id}">${x.name}</button><button class="chip" data-patdel="${x.id}" style="color:var(--g-c)">${S.delId === x.id ? "本当に削除?" : "削除"}</button></span>`;
+    h += `<span class="row" style="gap:2px"><button class="chip ${on ? "on" : ""}" data-pat="${x.id}">${x.name}</button><button class="chip" data-patdel="${x.id}" style="color:var(--g-d)">${S.delId === x.id ? "本当に削除?" : "削除"}</button></span>`;
   }
   return h + `</div></div>`;
 }
@@ -604,7 +606,7 @@ function playHtml() {
   } else {
     const r = S.res, last = S.cur.items[S.cur.items.length - 1];
     ansH = `<div class="panel">
-      <div class="row between" style="margin-bottom:12px"><span class="grade" style="background:${r.grade.color}">${r.grade.key}　${r.grade.label}</span><span class="dim small">${r.r.exact ? "厳密(全通り)" : `シミュレーション ±${(r.r.se * 100 * 2).toFixed(2)}%`}</span></div>
+      <div class="row between" style="margin-bottom:12px"><span class="grade${r.grade.key === "D" ? " d" : ""}" style="background:${r.grade.color}">${r.grade.key}　${r.grade.label}</span><span class="dim small">${r.r.exact ? "厳密(全通り)" : `シミュレーション ±${(r.r.se * 100 * 2).toFixed(2)}%`}</span></div>
       <div class="kpi main"><div class="kl">実際のエクイティ</div><div class="kbig">${r.actual.toFixed(1)}<small>%</small></div></div>
       <div class="kpis">
         <div class="kpi"><div class="kl">あなたの予想</div><div class="kn">${last.guess}<small>%</small></div></div>
