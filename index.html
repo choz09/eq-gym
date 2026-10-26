@@ -21,7 +21,7 @@
   --accent:#c6f432; --accent-ink:#141b02; --btn:#c6f432; --btn-ink:#141b02;
   --sel:#e9eef2; --sel-ink:#0b0c0e;
   --g-s:#4aa3ff; --g-a:#9ccbff; --g-b:#f2cf3c; --g-c:#ff9a3d; --g-d:#a64dd6;
-  --win:#4aa3ff; --tie:#d9d9df; --lose:#ff9a3d;
+  --win:#ffb02e; --tie:#d9d9df; --lose:#5b7cff;
   --suit-s:#dfe1e8; --suit-h:#ff6b6b; --suit-d:#6ea8ff; --suit-c:#5fe08a;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -151,7 +151,7 @@ a{color:var(--sel)}
 </style>
 </head>
 <body>
-<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span><small style="color:var(--faint);font-size:10px;margin-left:6px">v3</small>
+<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span><small style="color:var(--faint);font-size:10px;margin-left:6px">v4</small>
 <nav class="tabs">
   <button data-tab="quiz" class="on">出題</button>
   <button data-tab="calc">計算</button>
@@ -268,7 +268,7 @@ function toggleHeader(sel, kind, i) {
   const all = idx.every((x) => sel[x]);
   idx.forEach((x) => (sel[x] = all ? 0 : 1));
 }
-const HEAT_STOPS = [[0, "#ff9a3d"], [0.25, "#ff9a3d"], [0.35, "#b0763f"], [0.5, "#5b6470"], [0.65, "#4f87b8"], [0.75, "#4aa3ff"], [1, "#4aa3ff"]];
+const HEAT_STOPS = [[0, "#5b7cff"], [0.25, "#5b7cff"], [0.5, "#5b6472"], [0.75, "#ffb02e"], [1, "#ffb02e"]];
 const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 function heatRgb(v) {
   const st = HEAT_STOPS;
