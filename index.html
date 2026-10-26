@@ -66,7 +66,8 @@ button{font:inherit;color:inherit}
 .ghead.gtop{grid-template-columns:repeat(13,1fr)}
 .ghead.gleft{grid-template-rows:repeat(13,1fr)}
 .gh{border:0;background:none;color:var(--dim);font-size:11px;font-weight:700;padding:0;min-height:18px}
-.gh:active{color:var(--sel)}
+.gh{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.gh.hold{color:var(--sel);background:var(--surface2);border-radius:3px}
 .undo{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;background:var(--surface2);color:var(--sel);border-radius:999px;padding:8px 8px 8px 16px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.6)}
 .undo button{border:0;background:var(--sel);color:var(--sel-ink);border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px}
 .loupe{position:fixed;z-index:30;pointer-events:none;transform:translate(-50%,-100%);background:var(--sel);color:var(--sel-ink);border-radius:10px;padding:8px 14px;font-weight:800;font-size:20px;box-shadow:0 4px 18px rgba(0,0,0,.6);white-space:nowrap}
@@ -149,7 +150,7 @@ a{color:var(--sel)}
 </style>
 </head>
 <body>
-<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span>
+<header class="top"><div class="top-in"><span class="wm">EQ <b>GYM</b></span><small style="color:var(--faint);font-size:10px;margin-left:6px">v2</small>
 <nav class="tabs">
   <button data-tab="quiz" class="on">出題</button>
   <button data-tab="calc">計算</button>
@@ -770,6 +771,29 @@ function render() {
 }
 const savePatterns = () => { store.set("eqt_patterns", S.patterns); store.set("eqt_off", S.offPatterns); };
 
+// 見出し(A〜2): 誤タップ防止のため長押し(0.4秒)で一括変更
+document.addEventListener("contextmenu", (e) => { if (e.target.closest("[data-hr],[data-hc]")) e.preventDefault(); });
+document.addEventListener("pointerdown", (e) => {
+  const hh = e.target.closest("[data-hr],[data-hc]");
+  if (!hh) return;
+  const sx = e.clientX, sy = e.clientY;
+  hh.classList.add("hold");
+  const stop = () => { clearTimeout(timer); hh.classList.remove("hold"); window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", stop); window.removeEventListener("pointercancel", stop); };
+  const mv = (ev) => { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6) stop(); };
+  const timer = setTimeout(() => {
+    stop();
+    if (navigator.vibrate) navigator.vibrate(12);
+    const kind = hh.dataset.hr != null ? "r" : "c", [side, i] = (hh.dataset.hr != null ? hh.dataset.hr : hh.dataset.hc).split(":");
+    const sel = side === "E" ? S.editor.sel : S.calc[side].sel;
+    const before = Uint8Array.from(sel);
+    toggleHeader(sel, kind, +i);
+    if (side !== "E") { S.calc[side].pats = []; S.calc.out = null; } else S.editor.top = 0;
+    render();
+    showUndo(sel, before, side);
+  }, 400);
+  window.addEventListener("pointermove", mv); window.addEventListener("pointerup", stop); window.addEventListener("pointercancel", stop);
+});
+
 document.addEventListener("click", (e) => {
   const t = e.target;
   const tab = t.closest(".tabs button");
@@ -782,17 +806,7 @@ document.addEventListener("click", (e) => {
     if (info && heat && !Number.isNaN(heat[i])) info.textContent = cellDetail(heat, i);
     return;
   }
-  // 見出しタップ(行・列)
-  const hh = t.closest("[data-hr],[data-hc]");
-  if (hh) {
-    const kind = hh.dataset.hr != null ? "r" : "c", [side, i] = (hh.dataset.hr != null ? hh.dataset.hr : hh.dataset.hc).split(":");
-    const sel = side === "E" ? S.editor.sel : S.calc[side].sel;
-    const before = Uint8Array.from(sel);
-    toggleHeader(sel, kind, +i);
-    showUndo(sel, before, side);
-    if (side !== "E") { S.calc[side].pats = []; S.calc.out = null; } else S.editor.top = 0;
-    render(); return;
-  }
+  if (t.closest("[data-hr],[data-hc]")) return; // 見出しは長押しで一括変更(下のpointerdown)
   // パターン別レンジ
   if (t.closest("#edNew")) { S.editor = { name: "", sel: new Uint8Array(169), text: "", err: "", msg: "" }; render(); window.scrollTo(0, 0); return; }
   if (t.closest("#edCancel")) { S.editor = null; render(); return; }
