@@ -59,7 +59,7 @@ button{font:inherit;color:inherit}
 .slot.sm{width:40px;height:56px;font-size:18px}
 .cards{display:flex;gap:6px}
 /* 13x13 */
-.grid{display:grid;grid-template-columns:repeat(13,1fr);gap:1px;touch-action:none;user-select:none;-webkit-user-select:none}
+.grid{display:grid;grid-template-columns:repeat(13,1fr);gap:1px;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .grid.ro{touch-action:auto}
 .gwrap{display:grid;grid-template-columns:16px 1fr;gap:1px}
 .ghead{display:grid;gap:1px}
@@ -67,6 +67,8 @@ button{font:inherit;color:inherit}
 .ghead.gleft{grid-template-rows:repeat(13,1fr)}
 .gh{border:0;background:none;color:var(--dim);font-size:11px;font-weight:700;padding:0;min-height:18px}
 .gh:active{color:var(--sel)}
+.undo{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:12px;background:var(--surface2);color:var(--sel);border-radius:999px;padding:8px 8px 8px 16px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.6)}
+.undo button{border:0;background:var(--sel);color:var(--sel-ink);border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px}
 .loupe{position:fixed;z-index:30;pointer-events:none;transform:translate(-50%,-100%);background:var(--sel);color:var(--sel-ink);border-radius:10px;padding:8px 14px;font-weight:800;font-size:20px;box-shadow:0 4px 18px rgba(0,0,0,.6);white-space:nowrap}
 .loupe small{font-size:12px;font-weight:700;margin-right:6px;opacity:.7}
 .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:#7a8595;font-size:9.5px;font-weight:600;border-radius:2px;overflow:hidden}
@@ -243,6 +245,20 @@ function gridHtml(sel, opts = {}) {
   const hd = (kind) => RL.split("").map((ch, i) => `<button class="gh" data-h${kind}="${opts.head}:${i}">${ch}</button>`).join("");
   return `<div class="gwrap"><span></span><div class="ghead gtop">${hd("c")}</div><div class="ghead gleft">${hd("r")}</div>${h}</div>`;
 }
+function showUndo(sel, before, side) {
+  let u = $("#undo");
+  if (u) u.remove();
+  u = document.createElement("div"); u.id = "undo"; u.className = "undo";
+  u.innerHTML = `<span>見出しで一括変更しました</span><button>元に戻す</button>`;
+  document.body.appendChild(u);
+  const t = setTimeout(() => u.remove(), 5000);
+  u.querySelector("button").onclick = () => {
+    clearTimeout(t); u.remove();
+    sel.set(before);
+    if (side !== "E") { S.calc[side].pats = []; S.calc.out = null; } else S.editor.top = 0;
+    render();
+  };
+}
 // 見出しタップ: 行X = XX と、そのXより弱い相手とのスーテッド / 列X = XX と、同じオフスーツ(Xより強いランクは含めない)
 function toggleHeader(sel, kind, i) {
   const idx = [];
@@ -309,13 +325,36 @@ function attachGridPaint(el, sel, onChange) {
   };
   const apply = (i) => { if (i != null && sel[i] !== paint) { sel[i] = paint; onChange(); el.children[i].classList.toggle("on", !!paint); } };
   el.addEventListener("pointerdown", (e) => {
-    const i = cellAt(e.clientX, e.clientY);
-    if (i == null) return;
-    paint = sel[i] ? 0 : 1; apply(i); focus(i); loupe(e.clientX, e.clientY, i);
-    const move = (ev) => { const j = cellAt(ev.clientX, ev.clientY); apply(j); focus(j); loupe(ev.clientX, ev.clientY, j == null ? last : j); };
-    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); focus(null); loupe(0, 0, null); };
-    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
-    e.preventDefault();
+    const i0 = cellAt(e.clientX, e.clientY);
+    if (i0 == null) return;
+    const touch = e.pointerType === "touch";
+    let started = false, timer = null, sx = e.clientX, sy = e.clientY;
+    const begin = (x, y) => {
+      started = true;
+      const i = cellAt(x, y) ?? i0;
+      paint = sel[i] ? 0 : 1; apply(i); focus(i); loupe(x, y, i);
+      if (touch && navigator.vibrate) navigator.vibrate(8);
+    };
+    const block = (ev) => { if (started && ev.cancelable) ev.preventDefault(); };
+    const move = (ev) => {
+      if (!started) {
+        // タッチ: 長押し前に動いたらスクロールとみなして中止
+        if (touch && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6) end(true);
+        return;
+      }
+      const j = cellAt(ev.clientX, ev.clientY); apply(j); focus(j); loupe(ev.clientX, ev.clientY, j == null ? last : j);
+    };
+    const end = (cancel) => {
+      clearTimeout(timer);
+      // タッチの短いタップは1セルだけ切り替え
+      if (!started && touch && cancel !== true && !cancel?.type?.endsWith("cancel")) begin(sx, sy);
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); window.removeEventListener("pointercancel", end);
+      el.removeEventListener("touchmove", block);
+      focus(null); loupe(0, 0, null);
+    };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", end); window.addEventListener("pointercancel", end);
+    if (touch) { el.addEventListener("touchmove", block, { passive: false }); timer = setTimeout(() => begin(sx, sy), 220); }
+    else { begin(e.clientX, e.clientY); e.preventDefault(); }
   });
 }
 
@@ -748,7 +787,9 @@ document.addEventListener("click", (e) => {
   if (hh) {
     const kind = hh.dataset.hr != null ? "r" : "c", [side, i] = (hh.dataset.hr != null ? hh.dataset.hr : hh.dataset.hc).split(":");
     const sel = side === "E" ? S.editor.sel : S.calc[side].sel;
+    const before = Uint8Array.from(sel);
     toggleHeader(sel, kind, +i);
+    showUndo(sel, before, side);
     if (side !== "E") { S.calc[side].pats = []; S.calc.out = null; } else S.editor.top = 0;
     render(); return;
   }
